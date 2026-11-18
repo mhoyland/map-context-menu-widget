@@ -1,0 +1,24 @@
+{
+  "decimalPlaces": 6,
+  "showCoordinateHeader": true,
+  "menuItems": [
+    {
+      "id": "copy-coordinate",
+      "label": "Copy Coordinates",
+      "action": "copy-coordinate",
+      "enabled": true
+    },
+    {
+      "id": "zoom-in",
+      "label": "Zoom In Here",
+      "action": "zoom-in",
+      "enabled": true
+    },
+    {
+      "id": "center-map",
+      "label": "Centre Map Here",
+      "action": "center-map",
+      "enabled": true
+    }
+  ]
+}
