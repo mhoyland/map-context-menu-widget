@@ -32,7 +32,7 @@ so its right-click listener is active as soon as the page loads. Select it later
 | Copy coordinates | copy | Copies `lat, lon`, shows a check mark, then closes. |
 | Open widget | target widget's own icon | Opens the selected widget; optionally writes `mutableStateProps.mapContext`. Choosing a target fills in the label with the widget's name (e.g. *Print*) unless you have typed your own. The target must be inside a Widget Controller or similar container; a widget placed directly on the page is always open. |
 | Add to Coordinate Point | pin | Writes `mutableStateProps.coordinateAddRequest` to the target, then opens it. |
-| What's here? | select point | Writes `mutableStateProps.whatsHereRequest` to the target What's Here widget, then opens it. It lists the features of every visible layer at the right-clicked point. |
+| What's here? ([What's Here](https://github.com/mhoyland/whats-here-widget)) | select point | Writes `mutableStateProps.whatsHereRequest` to the target What's Here widget, then opens it. It lists the features of every visible layer at the right-clicked point. |
 | Add label here ([Attribute Label](https://github.com/mhoyland/attribute-label-widget)) | text | Writes `mutableStateProps.labelRequest` to the target Attribute Label widget and opens it. The widget labels the feature at that point with its current layer, fields and style. |
 | Add text here | text | Same as *Add label here* with `mode: 'text'`: the widget places its free text at that point. |
 | Centre map here | locate | `view.goTo(point)` |
