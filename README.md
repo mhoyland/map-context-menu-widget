@@ -62,3 +62,7 @@ The payload is written *before* `openWidget()` so a target inside a Widget Contr
 ## Compatibility
 
 Saved configuration from v1.x is read unchanged (`decimalPlaces`, `showCoordinateHeader`, `menuItems`).
+
+## Licence
+
+[MIT](LICENSE)

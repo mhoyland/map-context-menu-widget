@@ -7,7 +7,7 @@
   "author": "Custom",
   "description": "Always-on right-click context menu for an Experience Builder Map widget, with copy, zoom, centre, open-widget, Coordinate Point, What's Here and Attribute Label hand-off actions.",
   "copyright": "",
-  "license": "http://www.apache.org/licenses/LICENSE-2.0",
+  "license": "MIT",
   "dependency": [
     "jimu-arcgis"
   ],
