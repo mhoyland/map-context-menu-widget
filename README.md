@@ -34,7 +34,7 @@ so its right-click listener is active as soon as the page loads. Select it later
 | Add to Coordinate Point ([Coordinate Point](https://github.com/mhoyland/coordinate-point-widget)) | pin | Writes `mutableStateProps.coordinateAddRequest` to the target, then opens it. |
 | What's here? ([What's Here](https://github.com/mhoyland/whats-here-widget)) | select point | Writes `mutableStateProps.whatsHereRequest` to the target What's Here widget, then opens it. It lists the features of every visible layer at the right-clicked point. |
 | Add label here ([Attribute Label](https://github.com/mhoyland/attribute-label-widget)) | text | Writes `mutableStateProps.labelRequest` to the target Attribute Label widget and opens it. The widget labels the feature at that point with its current layer, fields and style. |
-| Add text here | text | Same as *Add label here* with `mode: 'text'`: the widget places its free text at that point. |
+| Add text here | text | Opens a small **Add text** dialog at the right-clicked spot. The text box starts with the last free text, selected so typing replaces it. **Enter** adds the text, **Shift+Enter** starts a new line, **Esc** closes. The text is placed in the Attribute Label widget's current style without opening that widget, and a message offers **Undo**. **More options…** places the text at the spot too, then opens it in Attribute Label's editor to change the text and style (Cancel there removes it). |
 | Centre map here | locate | `view.goTo(point)` |
 | Zoom in / out here | zoom | `view.goTo({ target, zoom ± 1 })` |
 | Separator | — | Divider line. |
@@ -62,6 +62,20 @@ The payload is written *before* `openWidget()` so a target inside a Widget Contr
 ## Compatibility
 
 Saved configuration from v1.x is read unchanged (`decimalPlaces`, `showCoordinateHeader`, `menuItems`).
+
+## Shared with [Attribute Label](https://github.com/mhoyland/attribute-label-widget)
+
+*Add text here* places text without opening Attribute Label, so the two widgets share a small contract.
+Either widget works without the other; if something is missing, the defaults below are used. Update both
+widgets together if any of this changes.
+
+| What | Where |
+|---|---|
+| Saved free text and style | `localStorage` key `exb-attribute-label:<appId or page path>:<Attribute Label widget id>`; Map Context Menu reads `freeText` and `style`, and writes `freeText`. Missing style falls back to Attribute Label's builder default style, then Arial 12 pt with a white halo. |
+| Label style → TextSymbol | Attribute Label `src/runtime/label.ts` (`toTextSymbolProperties`), copied in Map Context Menu `src/runtime/attribute-label-bridge.ts` (`makeTextSymbol`). |
+| Label tag | Graphic attributes `alSource: 'attribute-label'`, `alKind`, `alKey`, so Attribute Label lists the text; `alId` on text placed by *More options…*, so Attribute Label can open it in the editor. |
+| Layers | Draw's `jimu-draw-layer-<mapViewId>-…`, else Attribute Label's holding layer `attribute-label-<widgetId>`. |
+| Messages | `mutableStateProps.labelRequest` (`mode`: `feature`, `text`, `text-options`, `edit-text`; optional `text` and `labelId`) and `mutableStateProps.freeTextUpdate` (`text`). |
 
 ## Licence
 

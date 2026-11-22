@@ -3,5 +3,18 @@ export default {
   mapContextMenuAriaLabel: 'Map context menu',
   mapContextMenuLatLon: 'Latitude, longitude',
   mapContextMenuCopyCoordinates: 'Copy coordinates',
-  mapContextMenuCopied: 'Copied'
+  mapContextMenuCopied: 'Copied',
+  mapContextMenuTextAdded: 'Text added',
+  mapContextMenuUndo: 'Undo',
+  mapContextMenuLabelsLayer: 'Labels',
+  mcmAddTextTitle: 'Add text',
+  mcmAddTextLabel: 'Text',
+  mcmAddTextPlaceholder: 'Type the label text',
+  mcmAddTextKeys: 'Enter adds · Shift+Enter new line',
+  mcmAddTextStyle: 'Style',
+  mcmAddTextStyleTitle: 'The current style in the Attribute Label widget',
+  mcmAddTextMore: 'More options…',
+  mcmAddTextAdd: 'Add text',
+  mcmCancel: 'Cancel',
+  mcmClose: 'Close'
 }

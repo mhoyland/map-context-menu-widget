@@ -16,6 +16,8 @@ import SpatialReference from 'esri/geometry/SpatialReference'
 import * as webMercatorUtils from 'esri/geometry/support/webMercatorUtils'
 import type Point from 'esri/geometry/Point'
 import type { IMConfig, MenuAction, MenuItemConfig } from '../config'
+import AddTextDialog from './add-text-dialog'
+import { placeText, readSaved, saveText, type LabelStyle } from './attribute-label-bridge'
 import defaultMessages from './translations/default'
 
 interface ContextLocation {
@@ -34,6 +36,21 @@ interface PopupState {
 }
 
 const EMPTY_POPUP: PopupState = { visible: false, left: 0, top: 0 }
+const TOAST_MS = 5000
+
+/** The "Add text here" dialog: where, for which Attribute Label widget, and what to start with. */
+interface AddTextState {
+  item: MenuItemConfig
+  location: ContextLocation
+  point: Point
+  text: string
+  style: LabelStyle
+}
+
+interface Toast {
+  message: string
+  undo?: () => void
+}
 const WGS84 = new SpatialReference({ wkid: 4326 })
 const COPY_FEEDBACK_MS = 650
 
@@ -185,6 +202,39 @@ const widgetIconSource = (widget: any): string | null => {
   return typeof icon === 'string' ? icon : (icon.svg ?? null)
 }
 
+/** A short message near the bottom of the map, with Undo. */
+const toastStyle = (theme: IMThemeVariables) => css`
+  position: fixed;
+  z-index: 100000;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 7px 8px 7px 14px;
+  border-radius: 6px;
+  background: ${theme?.sys?.color?.surface?.overlay ?? '#fff'};
+  color: ${theme?.sys?.color?.surface?.overlayText ?? '#1f1f1f'};
+  box-shadow: ${theme?.sys?.shadow?.shadow3 ?? '0 8px 24px rgba(0,0,0,.18)'};
+  font-family: ${theme?.sys?.typography?.fontFamily ?? 'inherit'};
+  font-size: 0.8125rem;
+
+  button {
+    padding: 2px 6px;
+    border: 0;
+    background: transparent;
+    color: ${theme?.sys?.color?.primary?.main ?? '#076fe5'};
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+`
+
+const toastPosition = (jimuMapView: JimuMapView): React.CSSProperties => {
+  const rect = (jimuMapView?.view?.container as HTMLElement)?.getBoundingClientRect()
+  return rect ? { left: rect.left + rect.width / 2, top: rect.bottom - 56 } : { left: '50%', bottom: 24 }
+}
+
 const hostStyle = css`
   position: absolute;
   width: 1px;
@@ -210,6 +260,9 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
   const showCoordinateHeader = props.config?.showCoordinateHeader !== false
   const style = React.useMemo(() => getStyle(theme), [theme])
   const appWidgets = ReactRedux.useSelector((state: IMState) => state.appConfig?.widgets)
+  const appId = ReactRedux.useSelector((state: IMState) => (state as any).appId as string)
+  const [addText, setAddText] = React.useState<AddTextState>(null)
+  const [toast, setToast] = React.useState<Toast>(null)
 
   const closeMenu = React.useCallback((restoreFocus = false) => {
     window.clearTimeout(copyTimerRef.current)
@@ -254,6 +307,7 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
     if (!point) return
 
     pointRef.current = point
+    setAddText(null)
     const ll = pointToLatLon(point)
     window.clearTimeout(copyTimerRef.current)
     setCopied(false)
@@ -416,24 +470,74 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
     getAppStore().dispatch(appActions.openWidget(item.targetWidgetId))
   }
 
-  const sendToAttributeLabel = (item: MenuItemConfig, mode: 'feature' | 'text') => {
-    if (!item.targetWidgetId || !popup.location) return
+  /**
+   * 'feature' labels the feature at the point; 'edit-text' opens the label just placed from the Add text dialog
+   * (found by `labelId`) in Attribute Label's editor.
+   */
+  const sendToAttributeLabel = (item: MenuItemConfig, mode: 'feature' | 'edit-text', location: ContextLocation, text?: string, labelId?: string) => {
+    if (!item.targetWidgetId || !location) return
 
     // Same shape as whatsHereRequest; a fresh requestId lets the same spot be labelled twice.
     MutableStoreManager.getInstance().updateStateValue(item.targetWidgetId, 'labelRequest', {
       requestId: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       mode,
+      text,
+      labelId,
       sourceWidgetId: props.id,
       source: 'map-context-menu',
-      latitude: popup.location.latitude,
-      longitude: popup.location.longitude,
-      mapX: popup.location.mapX,
-      mapY: popup.location.mapY,
-      wkid: popup.location.wkid
+      latitude: location.latitude,
+      longitude: location.longitude,
+      mapX: location.mapX,
+      mapY: location.mapY,
+      wkid: location.wkid
     })
 
     getAppStore().dispatch(appActions.openWidget(item.targetWidgetId))
   }
+
+  // ---------- "Add text here": type the text in a card at the spot, without opening Attribute Label ----------
+  const openAddText = (item: MenuItemConfig) => {
+    const point = pointRef.current
+    if (!item.targetWidgetId || !popup.location || !point || !jimuMapView?.view) return
+    const builderStyle = (appWidgets?.[item.targetWidgetId]?.config as any)?.defaultStyle
+    const saved = readSaved(item.targetWidgetId, appId, builderStyle?.asMutable ? builderStyle.asMutable({ deep: true }) : builderStyle)
+    setAddText({ item, location: popup.location, point, text: saved.text, style: saved.style })
+  }
+
+  const addTextNow = (text: string) => {
+    if (!addText || !jimuMapView?.view) return
+    const widgetId = addText.item.targetWidgetId
+    const graphic = placeText(jimuMapView, widgetId, addText.point, text, addText.style, translate('mapContextMenuLabelsLayer'))
+    saveText(widgetId, appId, text)
+    // An Attribute Label that is already running keeps its Free text box in step.
+    MutableStoreManager.getInstance().updateStateValue(widgetId, 'freeTextUpdate', { requestId: `${Date.now()}`, text })
+    setAddText(null)
+    setToast({
+      message: translate('mapContextMenuTextAdded'),
+      undo: () => {
+        (graphic.layer as __esri.GraphicsLayer)?.remove(graphic)
+        setToast(null)
+      }
+    })
+  }
+
+  // More options: place the text where it is, so it stays on the map, then open it in Attribute Label's editor
+  // to restyle it. Cancel there removes it again.
+  const moreTextOptions = (text: string) => {
+    if (!addText || !jimuMapView?.view || !text.trim()) return
+    const widgetId = addText.item.targetWidgetId
+    const labelId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    placeText(jimuMapView, widgetId, addText.point, text, addText.style, translate('mapContextMenuLabelsLayer'), labelId)
+    saveText(widgetId, appId, text)
+    sendToAttributeLabel(addText.item, 'edit-text', addText.location, text, labelId)
+    setAddText(null)
+  }
+
+  React.useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => { setToast(null) }, TOAST_MS)
+    return () => { window.clearTimeout(timer) }
+  }, [toast])
 
   const runAction = async (item: MenuItemConfig) => {
     if (!popup.location || item.action === 'separator') return
@@ -454,10 +558,10 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
         sendToWhatsHere(item)
         break
       case 'add-label':
-        sendToAttributeLabel(item, 'feature')
+        sendToAttributeLabel(item, 'feature', popup.location)
         break
       case 'add-text':
-        sendToAttributeLabel(item, 'text')
+        openAddText(item)
         break
       case 'center-map':
         if (point) void view?.goTo(point)
@@ -567,6 +671,29 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
       )}
 
       {popupNode ? ReactDOM.createPortal(popupNode, document.body) : null}
+
+      {addText && jimuMapView && ReactDOM.createPortal(
+        <AddTextDialog
+          theme={theme}
+          jimuMapView={jimuMapView}
+          point={addText.point}
+          initialText={addText.text}
+          style={addText.style}
+          translate={translate}
+          onAdd={addTextNow}
+          onMoreOptions={moreTextOptions}
+          onClose={() => { setAddText(null) }}
+        />,
+        document.body
+      )}
+
+      {toast && ReactDOM.createPortal(
+        <div css={toastStyle(theme)} style={toastPosition(jimuMapView)} role='status'>
+          <span>{toast.message}</span>
+          {toast.undo && <button type='button' onClick={toast.undo}>{translate('mapContextMenuUndo')}</button>}
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

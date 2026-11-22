@@ -2,7 +2,7 @@
   "name": "map-context-menu",
   "label": "Map Context Menu",
   "type": "widget",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "exbVersion": "1.21.0",
   "author": "Custom",
   "description": "Always-on right-click context menu for an Experience Builder Map widget, with copy, zoom, centre, open-widget, Coordinate Point, What's Here and Attribute Label hand-off actions.",

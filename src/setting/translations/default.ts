@@ -27,7 +27,7 @@ export default {
   mcmAttributeLabelWidget: 'Attribute Label widget',
   mcmNoAttributeLabelWidget: 'Add an Attribute Label widget to this app to use this action.',
   mcmAttributeLabelHint: 'Labels the feature at the right-click with the layer, fields and style chosen in the Attribute Label widget, then opens it.',
-  mcmAttributeTextHint: 'Places the Attribute Label widget\'s free text at the right-click, then opens it.',
+  mcmAttributeTextHint: 'Shows a small dialog at the right-click to type the text, then places it in the Attribute Label widget\'s current style without opening that widget.',
   mcmAddToCoordinateHint: 'Sends an add-coordinate request to the Coordinate Point widget, then opens it.',
   mcmRemove: 'Remove',
   mcmAddMenuItem: 'Add menu item',
