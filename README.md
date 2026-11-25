@@ -30,7 +30,7 @@ so its right-click listener is active as soon as the page loads. Select it later
 | Action | Icon | Behaviour |
 |---|---|---|
 | Copy coordinates | copy | Copies `lat, lon`, shows a check mark, then closes. |
-| Open widget | target widget's own icon | Opens the selected widget; optionally writes `mutableStateProps.mapContext`. Choosing a target fills in the label with the widget's name (e.g. *Print*) unless you have typed your own. The target must be inside a Widget Controller or similar container; a widget placed directly on the page is always open. |
+| Open widget | target widget's own icon | Opens the selected widget; optionally writes `mutableStateProps.mapContext`. Choosing a target fills in the label with the widget's name (e.g. *Print*) unless you have typed your own. The target can be inside a Widget Controller or in a section view inside a Sidebar (see [Opening target widgets](#opening-target-widgets)); a widget placed directly on the page is always open. |
 | Add to Coordinate Point ([Coordinate Point](https://github.com/mhoyland/coordinate-point-widget)) | pin | Writes `mutableStateProps.coordinateAddRequest` to the target, then opens it. |
 | What's here? ([What's Here](https://github.com/mhoyland/whats-here-widget)) | select point | Writes `mutableStateProps.whatsHereRequest` to the target What's Here widget, then opens it. It lists the features of every visible layer at the right-clicked point. |
 | Add label here ([Attribute Label](https://github.com/mhoyland/attribute-label-widget)) | text | Writes `mutableStateProps.labelRequest` to the target Attribute Label widget and opens it. The widget labels the feature at that point with its current layer, fields and style. |
@@ -38,6 +38,16 @@ so its right-click listener is active as soon as the page loads. Select it later
 | Centre map here | locate | `view.goTo(point)` |
 | Zoom in / out here | zoom | `view.goTo({ target, zoom ± 1 })` |
 | Separator | — | Divider line. |
+
+## Opening target widgets
+
+Every action that opens a target widget makes it visible wherever it is placed. Starting at the target, the menu works outwards through the containers that hold it, and for each one:
+
+- **Section view:** switches the section to the view that holds the target, as clicking its tab in Views Navigation would.
+- **Sidebar:** opens the Sidebar if the target is on the side that collapses.
+- **Widget Controller:** opens the widget in the controller.
+
+This covers the built-in **Tab** template (Sidebar › Section › one view per widget) as well as Widget Controller layouts, and nested containers too. Only the layouts for the current screen size are followed, because templates such as Tab use a different Sidebar for each screen size. A target that is not placed in the current screen size's layout has nothing to reveal, so make sure it is placed at every size where you want the menu item to work.
 
 ## Keyboard and accessibility
 
@@ -56,7 +66,7 @@ so its right-click listener is active as soon as the page loads. Select it later
 `coordinateAddRequest` (Add to Coordinate Point) — same fields plus a unique `requestId` and `action: 'add-coordinate'`.
 
 `whatsHereRequest` (What's here?) and `labelRequest` (Add label here) — same fields as `mapContext` plus a unique `requestId`.
-The payload is written *before* `openWidget()` so a target inside a Widget Controller receives it on mount. The
+The payload is written *before* the target is opened, so a target inside a Widget Controller or an unvisited section view receives it on mount. The
 `requestId` lets the receiver ignore re-renders while still allowing the same location to be added twice.
 
 ## Compatibility

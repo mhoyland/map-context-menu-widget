@@ -1,4 +1,4 @@
-import { React, ReactDOM, ReactRedux, css, hooks, appActions, getAppStore, MutableStoreManager, type AllWidgetProps, type IMState, type IMThemeVariables } from 'jimu-core'
+import { React, ReactDOM, ReactRedux, css, hooks, MutableStoreManager, type AllWidgetProps, type IMState, type IMThemeVariables } from 'jimu-core'
 import { Icon } from 'jimu-ui'
 import { useTheme } from 'jimu-theme'
 import { JimuMapViewComponent, type JimuMapView } from 'jimu-arcgis'
@@ -17,6 +17,7 @@ import * as webMercatorUtils from 'esri/geometry/support/webMercatorUtils'
 import type Point from 'esri/geometry/Point'
 import type { IMConfig, MenuAction, MenuItemConfig } from '../config'
 import AddTextDialog from './add-text-dialog'
+import { revealWidget } from './reveal-widget'
 import { placeText, readSaved, saveText, type LabelStyle } from './attribute-label-bridge'
 import defaultMessages from './translations/default'
 
@@ -425,7 +426,7 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
       })
     }
 
-    getAppStore().dispatch(appActions.openWidget(item.targetWidgetId))
+    revealWidget(item.targetWidgetId)
   }
 
   const addToCoordinateWidget = (item: MenuItemConfig) => {
@@ -443,13 +444,13 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
       wkid: popup.location.wkid
     }
 
-    // Write before opening because a widget inside a Widget Controller
-    // may not be mounted until openWidget() is dispatched.
+    // Write before opening because a widget inside a Widget Controller or an unvisited section view
+    // may not be mounted until it is revealed.
     MutableStoreManager.getInstance().updateStateValue(item.targetWidgetId, 'coordinateAddRequest', request)
     // Also maintain the generic context payload for compatibility.
     MutableStoreManager.getInstance().updateStateValue(item.targetWidgetId, 'mapContext', request)
 
-    getAppStore().dispatch(appActions.openWidget(item.targetWidgetId))
+    revealWidget(item.targetWidgetId)
   }
 
   const sendToWhatsHere = (item: MenuItemConfig) => {
@@ -467,7 +468,7 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
       wkid: popup.location.wkid
     })
 
-    getAppStore().dispatch(appActions.openWidget(item.targetWidgetId))
+    revealWidget(item.targetWidgetId)
   }
 
   /**
@@ -492,7 +493,7 @@ export default function Widget (props: AllWidgetProps<IMConfig>) {
       wkid: location.wkid
     })
 
-    getAppStore().dispatch(appActions.openWidget(item.targetWidgetId))
+    revealWidget(item.targetWidgetId)
   }
 
   // ---------- "Add text here": type the text in a card at the spot, without opening Attribute Label ----------
